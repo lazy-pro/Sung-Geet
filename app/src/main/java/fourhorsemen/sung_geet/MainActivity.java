@@ -1,5 +1,6 @@
 package fourhorsemen.sung_geet;
 
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaPlayer;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+    int c = 0;
+    Button prevB;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -55,8 +58,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         seekBar = (SeekBar) findViewById(R.id.seekBar);
-       // SongInfo s = new SongInfo("Same Old Love", "Selena Gomez", "https://downpwnew.com/upload_file/5570/6757/Latest%20Bollywood%20Hindi%20Mp3%20Songs%20-%202018/Nirdosh%20%282018%29%20Hindi%20Movie%20Mp3%20Songs/01%20Barf%20Si%20-%20Nirdosh%20%28Armaan%20Malik%29%20190Kbps.mp3");
-       // songs.add(s);
+        // SongInfo s = new SongInfo("Same Old Love", "Selena Gomez", "https://downpwnew.com/upload_file/5570/6757/Latest%20Bollywood%20Hindi%20Mp3%20Songs%20-%202018/Nirdosh%20%282018%29%20Hindi%20Movie%20Mp3%20Songs/01%20Barf%20Si%20-%20Nirdosh%20%28Armaan%20Malik%29%20190Kbps.mp3");
+        // songs.add(s);
         songAdapter = new SongAdapter(this, songs);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(), linearLayoutManager.getOrientation());
@@ -66,29 +69,62 @@ public class MainActivity extends AppCompatActivity {
         songAdapter.setOnItemClickListener(new SongAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(final Button b, View v, final SongInfo s, int i) {
-                Runnable r=new Runnable() {
+                Runnable r = new Runnable() {
                     @Override
                     public void run() {
                         try {
+
                             if (b.getText().toString() == "stop") {
+                                c = 0;
                                 b.setText("play");
                                 mediaPlayer.stop();
                                 mediaPlayer.reset();
                                 mediaPlayer.release();
                                 mediaPlayer = null;
+                                prevB = null;
                             } else {
-                                mediaPlayer = new MediaPlayer();
-                                mediaPlayer.setDataSource(s.getSongURL());
-                                mediaPlayer.prepareAsync();
-                                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                                    @Override
-                                    public void onPrepared(MediaPlayer mp) {
-                                        mp.start();
-                                        seekBar.setProgress(0);
-                                        seekBar.setMax(mp.getDuration());
-                                        b.setText("stop");
-                                    }
-                                });
+                                if (c == 0) {
+                                    c = 1;
+
+                                    mediaPlayer = new MediaPlayer();
+                                    mediaPlayer.setDataSource(s.getSongURL());
+                                    mediaPlayer.prepareAsync();
+                                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                                        @Override
+                                        public void onPrepared(MediaPlayer mp) {
+                                            mp.start();
+                                            seekBar.setProgress(0);
+                                            seekBar.setMax(mp.getDuration());
+                                            b.setText("stop");
+                                            prevB = b;
+
+                                        }
+                                    });
+                                } else {
+
+                                    // Toast.makeText(MainActivity.this, "First,stop the playing song", Toast.LENGTH_SHORT).show();
+                                    mediaPlayer.stop();
+                                    mediaPlayer.reset();
+                                    mediaPlayer.release();
+                                    mediaPlayer = null;
+                                    if (prevB != null)
+                                        prevB.setText("play");
+                                    mediaPlayer = new MediaPlayer();
+                                    mediaPlayer.setDataSource(s.getSongURL());
+                                    mediaPlayer.prepareAsync();
+                                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                                        @Override
+                                        public void onPrepared(MediaPlayer mp) {
+                                            mp.start();
+                                            seekBar.setProgress(0);
+                                            seekBar.setMax(mp.getDuration());
+                                            b.setText("stop");
+                                            prevB = b;
+
+                                        }
+                                    });
+
+                                }
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -96,23 +132,24 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
 
-                recyclerView.postDelayed(r,100);
+                recyclerView.postDelayed(r, 100);
 
             }
         });
         checkPermission();
-        Thread t=new Mythread();
+        Thread t = new Mythread();
         t.start();
 
     }
-    public class Mythread extends Thread{
+
+    public class Mythread extends Thread {
         @Override
         public void run() {
             try {
 
                 Thread.sleep(1000);
-                if(mediaPlayer!=null)
-                seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                if (mediaPlayer != null)
+                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -128,44 +165,44 @@ public class MainActivity extends AppCompatActivity {
 
         }
         else{*/
-            loadSongs();
+        loadSongs();
         //}
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,String[]permissions,int[]grantResults){
-        switch (requestCode){
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
             case 123:
-                if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     loadSongs();
-                }else{
-                    Toast.makeText(this, "PERMISSION DENIED",Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "PERMISSION DENIED", Toast.LENGTH_SHORT).show();
                     checkPermission();
                 }
                 break;
             default:
-                super.onRequestPermissionsResult(requestCode,permissions,grantResults);
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
     }
 
     private void loadSongs() {
-        Uri uri= MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC+"!=0";
-        Cursor cursor=getContentResolver().query(uri,null,selection,null,null);
-        if(cursor!=null){
-            if(cursor.moveToFirst()){
-                do{
-                    String name=cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
-                    String artist=cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                    String url=cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
+        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String selection = MediaStore.Audio.Media.IS_MUSIC + "!=0";
+        Cursor cursor = getContentResolver().query(uri, null, selection, null, null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    String name = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
+                    String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+                    String url = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
 
-                    SongInfo s=new SongInfo(name,artist,url);
+                    SongInfo s = new SongInfo(name, artist, url);
                     songs.add(s);
 
-                }while (cursor.moveToNext());
+                } while (cursor.moveToNext());
                 cursor.close();
-                songAdapter=new SongAdapter(this,songs);
+                songAdapter = new SongAdapter(this, songs);
             }
 
         }
