@@ -19,10 +19,19 @@ import static android.view.View.Z;
  */
 
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongHolder> {
+    @Override
+    public long getItemId(int position){
+        return position;
+    }
+    @Override
+    public int getItemViewType(int position){
+        return position;
+    }
     ArrayList<SongInfo> songs;
     Context context;
 
     SongAdapter(Context context, ArrayList<SongInfo> songs) {
+        setHasStableIds(true);
         this.context = context;
         this.songs = songs;
     }

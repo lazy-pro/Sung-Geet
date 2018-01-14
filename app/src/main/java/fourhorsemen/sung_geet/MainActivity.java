@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 import java.util.jar.Manifest;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
+
+import static android.R.id.input;
 
 public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
@@ -81,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
                                 mediaPlayer.reset();
                                 mediaPlayer.release();
                                 mediaPlayer = null;
+                                seekBar.setProgress(0);
                                 prevB = null;
                             } else {
                                 if (c == 0) {
@@ -95,6 +99,24 @@ public class MainActivity extends AppCompatActivity {
                                             mp.start();
                                             seekBar.setProgress(0);
                                             seekBar.setMax(mp.getDuration());
+                                            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                                @Override
+                                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                                    if (fromUser){
+                                                        mediaPlayer.seekTo(progress);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                                                }
+
+                                                @Override
+                                                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                                                }
+                                            });
                                             b.setText("stop");
                                             prevB = b;
 
@@ -107,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                                     mediaPlayer.reset();
                                     mediaPlayer.release();
                                     mediaPlayer = null;
+
                                     if (prevB != null)
                                         prevB.setText("play");
                                     mediaPlayer = new MediaPlayer();
@@ -118,6 +141,24 @@ public class MainActivity extends AppCompatActivity {
                                             mp.start();
                                             seekBar.setProgress(0);
                                             seekBar.setMax(mp.getDuration());
+                                            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                                @Override
+                                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                                    if (fromUser){
+                                                        mediaPlayer.seekTo(progress);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                                                }
+
+                                                @Override
+                                                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                                                }
+                                            });
                                             b.setText("stop");
                                             prevB = b;
 
@@ -132,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
 
-                recyclerView.postDelayed(r, 100);
+                seekBar.postDelayed(r, 1000);
 
             }
         });
@@ -143,18 +184,44 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public class Mythread extends Thread {
+
+
         @Override
         public void run() {
-            try {
+            while (true) {
 
-                Thread.sleep(1000);
-                if (mediaPlayer != null)
-                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                Log.d("Runwa", "run: " + 1);
+                if (mediaPlayer != null) {
+                    seekBar.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                        }
+                    });
+
+                    Log.d("Runwa", "run: " + mediaPlayer.getCurrentPosition());
+                    MediaPlayer.OnCompletionListener cListener = new MediaPlayer.OnCompletionListener(){
+
+                        public void onCompletion(MediaPlayer mp){
+                            seekBar.setProgress(0);
+                            if(prevB!=null)
+                                prevB.setText("Play");
+                        }
+                    };
+
+                    mediaPlayer.setOnCompletionListener(cListener);
+                }
+
             }
         }
+
     }
+
 
     private void checkPermission() {
        /* if(Build.VERSION.SDK_INT>=23) {
@@ -162,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
                 requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE},123);
                 return ;
             }
-
         }
         else{*/
         loadSongs();
